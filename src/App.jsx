@@ -99,15 +99,21 @@ function App() {
           const content = cleanAnsi(trimmedLine.slice(6).trim());
           if (!content) continue;
 
-          // Differential Diagnosis detection (Specific to our new backend log)
-          if (content.includes('📊 Differential Diagnosis Updated') || content.includes('Differential Diagnosis (Text Parser)')) {
-            // Simple parsing for the top diagnosis
-            const dxMatch = content.match(/- ([^:]+): (\d+)%/);
-            if (dxMatch) {
+          // Differential Diagnosis detection (Enhanced for top 3)
+          if (content.includes('� TOP DIFFERENTIAL DIAGNOSES') || content.includes('📊 Differential Diagnosis Updated')) {
+            // Regex to match "1. Name   Probability: 80%" or "- Name: 80%"
+            const dxRegex = /(?:\d+\.\s+|- )([^:]+?)(?:\s+Probability: |:\s+)(\d+)%/g;
+            const matches = [...content.matchAll(dxRegex)];
+
+            if (matches.length > 0) {
+              const topDiagnoses = matches.slice(0, 3).map(m => ({
+                diagnosis: m[1].trim(),
+                probability: m[2] + '%'
+              }));
+
               setDifferential({
-                diagnosis: dxMatch[1],
-                probability: dxMatch[2] + '%',
-                full: content.split('Updated:')[1] || content
+                items: topDiagnoses,
+                full: content
               });
             }
           }
@@ -286,7 +292,7 @@ function App() {
 
         <section className="chat-section">
           <AnimatePresence>
-            {differential && (
+            {differential && differential.items && (
               <motion.div
                 initial={{ opacity: 0, y: -20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -295,15 +301,19 @@ function App() {
                 <div className="diff-header">
                   <div className="diff-title">
                     <Activity size={16} className="pulse-slow" />
-                    <span>Current Leading Hypothesis</span>
-                  </div>
-                  <div className="diff-stats">
-                    <span className="prob-badge">{differential.probability} Confidence</span>
+                    <span>Top Differential Diagnoses</span>
                   </div>
                 </div>
-                <div className="diff-content">
-                  <span className="dx-label">Diagnosis:</span>
-                  <span className="dx-value">{differential.diagnosis}</span>
+                <div className="diff-grid">
+                  {differential.items.map((item, idx) => (
+                    <div key={idx} className="diff-item">
+                      <div className="diff-rank">{idx + 1}</div>
+                      <div className="diff-info">
+                        <span className="dx-value">{item.diagnosis}</span>
+                        <span className="prob-badge">{item.probability}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -355,7 +365,7 @@ function App() {
           </div>
         </section>
       </main>
-    </div>
+    </div >
   );
 }
 
