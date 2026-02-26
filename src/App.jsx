@@ -118,8 +118,8 @@ function App() {
             }
           }
 
-          // Agent detection
-          const agentMatch = content.match(/Agent Name ([^\[│╮ ]+(?:\s+[^\[│╮ ]+)*)/);
+          // Agent detection - format is usually "╭───── Agent Name: Dr. Test-Chooser  ─────╮"
+          const agentMatch = content.match(/Agent Name:\s*([a-zA-Z\.\- ]+)/);
           if (agentMatch) {
             const agentName = agentMatch[1].trim();
             if (currentAgentName !== agentName) {
